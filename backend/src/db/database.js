@@ -24,6 +24,7 @@ const register = async ({firstname,lastname,dateofbirth,gender,contactnumber,ema
 // Loggin in a Patient
 const login = async ({email,password}) => {
     const res = await pool.query("SELECT * FROM Patients WHERE Email = ? AND Password = ? ",[email,password]);
+    const res1 =  ("CREATE OR REPLACE VIEW loginInfo IS SELECT * FROM Patients WHERE Email = ? AND Password = ?",[email,password]);
     return res[0];
 };
 
