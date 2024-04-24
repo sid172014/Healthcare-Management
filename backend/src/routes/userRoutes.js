@@ -5,7 +5,7 @@ const jwt = require('jsonwebtoken');
 const router = new express.Router();
 
 // Implementing DB
-const { register, login,getAppointments,getDoctors, addAppointments, getMedicalRecords, getBills, updateBill } = require('../db/database');
+const {allPatients, register, getAppointments, getDoctors, addAppointments, getMedicalRecords, getBills,getBillsDoctor, updateBill, loginPatient, loginDoctor, getDocAppointments, addBillsDoctor } = require('../db/database');
 const authMiddleware = require('../middlewares/auth');
 
 // Registering Users
@@ -30,9 +30,15 @@ router.post('/users/signup', async (req, res) => {
 // Logging in users
 router.post('/users/login', async (req, res) => {
     try {
-        const user = await login(req.body);
+        let loginUser = "Patient";
+        let user = await loginPatient(req.body);
         if (user.length === 0) {
-            throw new Error("User does not exists")
+            user = await loginDoctor(req.body);
+            if (user.length === 0) {
+                throw new Error("User does not exists")
+            }else{
+                loginUser  = "Doctor";
+            }
         }
 
         // Generating the Secret Token
@@ -41,9 +47,8 @@ router.post('/users/login', async (req, res) => {
             password: user[0].Password
         }, 'secret');
 
-
         res.json({
-            ...user[0], token
+            ...user[0], token, type: loginUser
         });
     } catch (e) {
         res.status(404).json({
@@ -51,6 +56,15 @@ router.post('/users/login', async (req, res) => {
         });
     };
 });
+
+router.get('/doctors/patients', authMiddleware, async (req,res) => {
+    try{
+        const response = await allPatients();
+        res.send(response);
+    }catch(e){ 
+        res.status(400).send(e.message);
+    }
+})
 
 // Getting Patient Info
 router.get('/users/profile', authMiddleware, async (req, res) => {
@@ -72,54 +86,91 @@ router.get('/users/appointments', authMiddleware, async (req, res) => {
     }
 });
 
-router.post('/users/appointments',authMiddleware, async (req,res) => {
+router.get('/doctors/appointments', authMiddleware, async (req,res) => {
     try{
-        const response = await addAppointments(req.body);
+        const response = await getDocAppointments(req.user.DoctorID);
         res.send(response);
     }catch(e){
         res.status(400).send(e.message);
     }
 })
 
-router.get('/doctors', authMiddleware, async(req,res) => {
-    try{
+router.post('/users/appointments', authMiddleware, async (req, res) => {
+    try {
+        const response = await addAppointments(req.body);
+        res.send(response);
+    } catch (e) {
+        res.status(400).send(e.message);
+    }
+});
+
+
+router.get('/doctors', authMiddleware, async (req, res) => {
+    try {
         const response = await getDoctors();
         res.send(response);
-    }catch(e){
+    } catch (e) {
         res.status(400).send(e.message);
     }
 });
 
-router.get('/users/records', authMiddleware, async(req,res) => {
-    try{
+router.get('/users/records', authMiddleware, async (req, res) => {
+    try {
         const response = await getMedicalRecords(req.user.PatientID);
         res.send(response);
-    }catch(e){
+    } catch (e) {
         res.status(400).send(e.message);
     }
 });
 
-router.get('/users/bills', authMiddleware, async(req,res) => {
-    try{
+router.get('/users/bills', authMiddleware, async (req, res) => {
+    try {
         const response = await getBills(req.user.PatientID);
+        res.send(response);
+    } catch (e) {
+        res.status(400).send(e.message);
+    }
+});
+router.get('/doctors/bills', authMiddleware, async (req,res) => {
+    try{
+        const response = await getBillsDoctor(req.user.DoctorID);
         res.send(response);
     }catch(e){
         res.status(400).send(e.message);
     }
 });
 
-router.patch('/users/bills', authMiddleware, async(req,res) => {
-try{
-    const newObject = {
-        PatientID : req.user.PatientID,
-        TotalAmount : req.body.TotalAmount,
-        PaymentMethod : req.body.PaymentMethod
-    };
-    const response = await updateBill(newObject);
-    res.send(response)
-}catch(e){
-    res.status(400).send(e.message);
-}
+router.post('/doctors/bills' ,authMiddleware, async (req,res) => {
+    try{
+        const patientID = parseInt(req.body.PatientID);
+        const newObject = {
+            PatientID : patientID,
+            DoctorID : req.user.DoctorID,
+            Date : req.body.Date,
+            TotalAmount : req.body.TotalAmount,
+            PaymentStatus : req.body.PaymentStatus,
+            PaymentMethod : req.body.PaymentMethod
+        };
+        const response = await addBillsDoctor(newObject);
+        res.send(response);
+    }catch(e){
+        res.status(400).send(e.message);
+    }
+})
+
+router.patch('/users/bills', authMiddleware, async (req, res) => {
+    try {
+        const newObject = {
+            PatientID: req.user.PatientID,
+            TotalAmount: req.body.TotalAmount,
+            PaymentMethod: req.body.PaymentMethod
+        };
+        const response = await updateBill(newObject);
+        res.send(response)
+    } catch (e) {
+        res.status(400).send(e.message);
+    }
 });
+
 
 module.exports = router;
