@@ -18,7 +18,8 @@ CREATE TABLE Doctors (
     LastName VARCHAR(255),
     Specialization VARCHAR(255),
     ContactNumber VARCHAR(15),
-    Email VARCHAR(255)
+    Email VARCHAR(255),
+    Password VARCHAR(200)
 );
 CREATE TABLE Appointments (
     AppointmentID INT AUTO_INCREMENT PRIMARY KEY,
@@ -43,16 +44,21 @@ CREATE TABLE MedicalRecords (
 CREATE TABLE Bills (
     InvoiceID INT AUTO_INCREMENT PRIMARY KEY,
     PatientID INT,
+    DoctorID INT,
     Date DATE,
     TotalAmount DECIMAL(10, 2),
     PaymentStatus ENUM('Paid', 'Pending'),
     PaymentMethod VARCHAR(255),
-    FOREIGN KEY (PatientID) REFERENCES Patients(PatientID)
+    FOREIGN KEY (PatientID) REFERENCES Patients(PatientID),
+    FOREIGN KEY (DoctorID) REFERENCES Doctors(DoctorID)
 );
+
+
 
 INSERT INTO Patients (FirstName, LastName, DateOfBirth, Gender, ContactNumber, Email, Password, Address) 
 VALUES ('John', 'Doe', '1990-05-15', 'Male', '1234567890', 'john.doe@example.com', 'password123', '123 Main St, City, State, Zip');
 
+-- To add more doctors add their passwords as well
 INSERT INTO Doctors (FirstName, LastName, Specialization, ContactNumber, Email) 
 VALUES ('Michael', 'Johnson', 'Pediatrics', '1234567890', 'michael.johnson@hospital.com');
 

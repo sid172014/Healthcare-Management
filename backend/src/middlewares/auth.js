@@ -1,21 +1,28 @@
 const jwt = require('jsonwebtoken');
-const { verifyPatient } = require('../db/database');
+const { verifyPatient, verifyDoctor } = require('../db/database');
 
 const authMiddleware = async (req, res, next) => {
     try {
-        const token =  req.headers.authorization;
+        const token = req.headers.authorization;
 
         console.log(token);
         const data = token.split(' ');
 
-        const jwtData =jwt.verify(data[1], 'secret');
+        const jwtData = jwt.verify(data[1], 'secret');
 
-        const searchDb = await verifyPatient({
-            email : jwtData.email,
-            password : jwtData.password
+        let searchDb = await verifyPatient({
+            email: jwtData.email,
+            password: jwtData.password
         });
-        if(searchDb.length === 0){
-            throw new Error("Invalid Authorization");
+
+        if (searchDb.length === 0) {
+            searchDb = await verifyDoctor({
+                email: jwtData.email,
+                password: jwtData.password
+            });
+            if (searchDb.length === 0) {
+                throw new Error("Invalid Authorization");
+            }
         };
         req.user = searchDb[0];
         next();

@@ -26,11 +26,19 @@ const Login = ({setRenderElement}) => {
     try{
     const response = await axios.post('http://localhost:3000/users/login', loginData);
     localStorage.setItem('token', response.data.token);
+    console.log(response.data.type);
     console.log(response.data);
+
     toast.success("Success");
+    if(response.data.type === "Patient"){
     setTimeout(() => {
       router.push('/dashboard');
     }, 2000);
+    }else{
+      setTimeout(() => {
+        router.push('/docdashboard');
+      },2000);
+    }
     }catch(e){
       console.log(e);
       toast.error(e.response.data.message);

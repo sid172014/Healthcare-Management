@@ -11,8 +11,9 @@ const pool = mysql2.createPool({
     database : process.env.MYSQL_DATABASE  
 }).promise();
 
-const result = async() => {
+const allPatients = async() => {
     const res = await pool.query("SELECT *  FROM Patients");
+    return res[0];
 };
 
 // Registering a Patient
@@ -21,18 +22,30 @@ const register = async ({firstname,lastname,dateofbirth,gender,contactnumber,ema
     return res[0];
 };
 
-// Loggin in a Patient
-const login = async ({email,password}) => {
+// Logging in a Patient
+const loginPatient = async ({email,password}) => {
     const res = await pool.query("SELECT * FROM Patients WHERE Email = ? AND Password = ? ",[email,password]);
     const res1 =  ("CREATE OR REPLACE VIEW loginInfo IS SELECT * FROM Patients WHERE Email = ? AND Password = ?",[email,password]);
     return res[0];
 };
+
+// Logging in as a Doctor
+const loginDoctor = async ({email,password}) => {
+    const res = await pool.query("SELECT * FROM Doctors WHERE Email = ? AND Password = ?" , [email,password]);
+    return res[0];
+}
 
 //Verifying if the patient exists
 const verifyPatient = async ({email,password}) => {
     const res = await pool.query("SELECT * FROM Patients WHERE Email = ? AND Password = ?", [email,password]);
     return res[0];
 };
+
+//Verifying if the Doctor exists
+const verifyDoctor = async ({email,password}) =>{
+    const res = await pool.query("SELECT * FROM Doctors WHERE Email = ? AND Password = ?",[email,password]);
+    return res[0];
+}
 
 // Get appointments for Patient
 // const getAppointments = async (id) => {
@@ -42,6 +55,11 @@ const verifyPatient = async ({email,password}) => {
 
 const getAppointments = async (id) => {
     const res = await pool.query("SELECT Appointments.AppointmentID, Appointments.DoctorID, Appointments.PatientID, Appointments.AppointmentDate, Appointments.AppointmentTime, Appointments.Status, Doctors.FirstName AS DoctorFirstName, Doctors.LastName AS DoctorLastName FROM Appointments JOIN Doctors ON Appointments.DoctorID = Doctors.DoctorID WHERE Appointments.PatientID = ?" , [id]);
+    return res[0];
+};
+
+const getDocAppointments = async (id) => {
+    const res = await pool.query("SELECT Appointments.PatientID,Appointments.AppointmentDate, Appointments.Status,Appointments.AppointmentTime,Patients.Firstname, Patients.Lastname FROM Appointments JOIN Patients ON Appointments.PatientID = Patients.PatientID AND Appointments.DoctorID = ?", [id]);
     return res[0];
 };
 
@@ -59,9 +77,18 @@ const getMedicalRecords = async (id) => {
     const res = await pool.query("SELECT * FROM MedicalRecords WHERE PatientID = ?",[id]);
     return res[0];
 };
-
 const getBills = async (id) => {
     const res = await pool.query("SELECT * FROM Bills WHERE PatientID = ?",[id]);
+    return res[0];
+};
+
+const getBillsDoctor = async (id) => {
+    const res = await pool.query("SELECT Bills.*,Patients.Firstname,Patients.Lastname FROM Bills JOIN Patients ON Patients.PatientID = Bills.PatientID WHERE DoctorID = ?", [id]);
+    return res[0];
+};
+
+const addBillsDoctor = async ({PatientID,DoctorID,Date,TotalAmount,PaymentStatus,PaymentMethod}) => {
+    const res = await pool.query("INSERT INTO Bills (PatientID, DoctorID, Date, TotalAmount, PaymentStatus, PaymentMethod)  VALUES (?,?,?,?,?,?)",[PatientID,DoctorID,Date,TotalAmount,PaymentStatus,PaymentMethod]);
     return res[0];
 };
 
@@ -70,5 +97,5 @@ const updateBill = async ({PatientID,TotalAmount,PaymentMethod}) => {
     return res[0];
 }
 module.exports = {
-    result,register,login,verifyPatient,getAppointments,getDoctors,addAppointments,getMedicalRecords,getBills,updateBill
+    allPatients,register,loginPatient,loginDoctor,verifyPatient,verifyDoctor,getAppointments,getDocAppointments,getDoctors,getBillsDoctor,addAppointments,getMedicalRecords,getBills,updateBill,addBillsDoctor
 }
